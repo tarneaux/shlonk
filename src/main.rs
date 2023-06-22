@@ -28,6 +28,7 @@
 extern crate rocket;
 use clap::Parser;
 use rocket::{get, response::Redirect, routes, State};
+use std::fmt::{Debug, Display, Formatter};
 use std::{collections::HashMap, fs::File, io::Read};
 
 #[derive(Parser, Debug)]
@@ -42,7 +43,10 @@ struct Args {
 #[launch]
 fn rocket() -> _ {
     let args = Args::parse();
-    let url_cache = get_urls(&args.config).unwrap(); // TODO: Handle errors
+    let url_cache = get_urls(&args.config).unwrap_or_else(|e| {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    });
     let config = rocket::Config {
         port: args.port,
         ..Default::default()
@@ -70,11 +74,36 @@ enum ConfigParseError {
     IoError(std::io::Error),
 }
 
+impl Display for ConfigParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConfigParseError::LineParseError(e, line) => {
+                write!(
+                    f,
+                    "Error parsing line \"{}\" in configuration file: {}",
+                    line, e
+                )
+            }
+            ConfigParseError::IoError(e) => write!(f, "Error reading configuration file: {}", e),
+        }
+    }
+}
+
 #[derive(Debug)]
 enum LineParseError {
     MissingName,
     MissingUrl,
     InvalidPermanent,
+}
+
+impl Display for LineParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LineParseError::MissingName => write!(f, "Missing name"),
+            LineParseError::MissingUrl => write!(f, "Missing URL"),
+            LineParseError::InvalidPermanent => write!(f, "Invalid permanent argument"),
+        }
+    }
 }
 
 fn get_urls(path: &str) -> Result<HashMap<String, MyRedirect>, ConfigParseError> {
