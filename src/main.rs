@@ -50,12 +50,18 @@ fn rocket() -> _ {
     rocket::build()
         .manage(url_cache)
         .mount("/", routes![get_url])
+        .register("/", catchers![not_found])
         .configure(config)
 }
 
 #[get("/<name>")]
 fn get_url(name: &str, cache: &State<HashMap<String, MyRedirect>>) -> Option<Redirect> {
     cache.get(name).map(|r| r.clone().into())
+}
+
+#[catch(404)]
+fn not_found() -> &'static str {
+    "Sorry, this URL was not found."
 }
 
 #[derive(Debug)]
