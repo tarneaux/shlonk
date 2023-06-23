@@ -48,7 +48,6 @@ impl Config {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Url {
-    // pub name: String, // TODO: make a default function fo the name: we can infer it from the end of the url
     pub url: String,
     #[serde(default = "default_permanent")]
     pub permanent: bool,
