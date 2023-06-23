@@ -7,9 +7,8 @@
 #[macro_use]
 extern crate rocket;
 use rocket::{get, response::Redirect, routes, State};
-use std::collections::HashMap;
 mod config_parser;
-use config_parser::{Config, Url};
+use config_parser::Config;
 mod argument_parser;
 use argument_parser::Args;
 use clap::Parser;
@@ -17,27 +16,24 @@ use clap::Parser;
 #[launch]
 fn rocket() -> _ {
     let args = Args::parse();
-    let url_cache = {
-        let config = Config::read(&args.config).unwrap_or_else(|e| {
-            eprintln!("Error reading configuration file: {}", e);
-            std::process::exit(1);
-        });
-        config.urls
-    };
-    let config = rocket::Config {
-        port: args.port,
+    let config = Config::read(&args.config).unwrap_or_else(|e| {
+        eprintln!("Error reading configuration file: {}", e);
+        std::process::exit(1);
+    });
+    let rocket_config = rocket::Config {
+        port: config.port,
         ..Default::default()
     };
     rocket::build()
-        .manage(url_cache)
+        .manage(config)
         .mount("/", routes![get_url])
         .register("/", catchers![not_found])
-        .configure(config)
+        .configure(rocket_config)
 }
 
 #[get("/<name>")]
-fn get_url(name: &str, cache: &State<HashMap<String, Url>>) -> Option<Redirect> {
-    cache.get(name).map(|r| r.clone().into())
+fn get_url(name: &str, config: &State<Config>) -> Option<Redirect> {
+    config.urls.get(name).map(|r| r.clone().into())
 }
 
 #[catch(404)]
