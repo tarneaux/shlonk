@@ -147,7 +147,7 @@ fn parse_line(
 }
 
 // Rocket doesn't want us to clone their Redirect type.
-// No problem, we'll just make our own. and convert it to a Redirect when needed.
+// No problem, we'll just make our own, and convert it to a Redirect when needed.
 #[derive(Clone)]
 struct MyRedirect {
     url: String,
