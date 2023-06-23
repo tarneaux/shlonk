@@ -28,25 +28,30 @@
 extern crate rocket;
 use clap::Parser;
 use rocket::{get, response::Redirect, routes, State};
-use std::fmt::{Debug, Display, Formatter};
-use std::{collections::HashMap, fs::File, io::Read};
+use std::collections::HashMap;
+use std::fmt::Debug;
+mod config_parser;
+use config_parser::{Config, Url};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about=None)]
 struct Args {
     #[clap(short, long, default_value = "8080")]
     port: u16,
-    #[clap(short, long, default_value = "/etc/shlonk.conf")]
+    #[clap(short, long, default_value = "/etc/shlonk/config.yml")]
     config: String,
 }
 
 #[launch]
 fn rocket() -> _ {
     let args = Args::parse();
-    let url_cache = get_urls(&args.config).unwrap_or_else(|e| {
-        eprintln!("{}", e);
-        std::process::exit(1);
-    });
+    let url_cache = {
+        let config = Config::read(&args.config).unwrap_or_else(|e| {
+            eprintln!("Error reading configuration file: {}", e);
+            std::process::exit(1);
+        });
+        config.urls
+    };
     let config = rocket::Config {
         port: args.port,
         ..Default::default()
@@ -59,123 +64,11 @@ fn rocket() -> _ {
 }
 
 #[get("/<name>")]
-fn get_url(name: &str, cache: &State<HashMap<String, MyRedirect>>) -> Option<Redirect> {
+fn get_url(name: &str, cache: &State<HashMap<String, Url>>) -> Option<Redirect> {
     cache.get(name).map(|r| r.clone().into())
 }
 
 #[catch(404)]
 fn not_found() -> &'static str {
     "Sorry, this URL was not found."
-}
-
-#[derive(Debug)]
-enum ConfigParseError {
-    LineParseError(LineParseError, String),
-    IoError(std::io::Error),
-}
-
-impl Display for ConfigParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ConfigParseError::LineParseError(e, line) => {
-                write!(
-                    f,
-                    "Error parsing line \"{}\" in configuration file: {}",
-                    line, e
-                )
-            }
-            ConfigParseError::IoError(e) => write!(f, "Error reading configuration file: {}", e),
-        }
-    }
-}
-
-#[derive(Debug)]
-enum LineParseError {
-    MissingName,
-    MissingUrl,
-    InvalidPermanent,
-}
-
-impl Display for LineParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LineParseError::MissingName => write!(f, "Missing name"),
-            LineParseError::MissingUrl => write!(f, "Missing URL"),
-            LineParseError::InvalidPermanent => write!(f, "Invalid permanent argument"),
-        }
-    }
-}
-
-fn get_urls(path: &str) -> Result<HashMap<String, MyRedirect>, ConfigParseError> {
-    let mut file = File::open(path).map_err(|e| ConfigParseError::IoError(e))?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .map_err(|e| ConfigParseError::IoError(e))?;
-    parse_all_urls(contents)
-}
-
-fn parse_all_urls(contents: String) -> Result<HashMap<String, MyRedirect>, ConfigParseError> {
-    let mut urls = HashMap::new();
-    for line in contents.lines() {
-        parse_line(line, &mut urls)
-            .map_err(|e| ConfigParseError::LineParseError(e, line.to_string()))?;
-    }
-    Ok(urls)
-}
-
-fn parse_line(
-    line: &str,
-    redirections: &mut HashMap<String, MyRedirect>,
-) -> Result<(), LineParseError> {
-    if line.starts_with('#') || line.is_empty() {
-        return Ok(());
-    }
-    let mut split = line.split(' ');
-    let path = split.next().ok_or(LineParseError::MissingName)?;
-    let url = split.next().ok_or(LineParseError::MissingUrl)?;
-    let permanent = match split.next() {
-        Some("permanent") => Ok(true),
-        Some(_) => Err(LineParseError::InvalidPermanent),
-        None => Ok(false),
-    }?;
-    let redirect = match permanent {
-        true => MyRedirect::permanent(url),
-        false => MyRedirect::temporary(url),
-    };
-    redirections.insert(path.to_string(), redirect);
-    Ok(())
-}
-
-// Rocket doesn't want us to clone their Redirect type.
-// No problem, we'll just make our own, and convert it to a Redirect when needed.
-#[derive(Clone)]
-struct MyRedirect {
-    url: String,
-    permanent: bool,
-}
-
-impl MyRedirect {
-    fn permanent(url: &str) -> Self {
-        Self {
-            url: url.to_string(),
-            permanent: true,
-        }
-    }
-
-    fn temporary(url: &str) -> Self {
-        Self {
-            url: url.to_string(),
-            permanent: false,
-        }
-    }
-}
-
-impl Into<Redirect> for MyRedirect {
-    fn into(self) -> Redirect {
-        if self.permanent {
-            Redirect::permanent(self.url)
-        } else {
-            Redirect::temporary(self.url)
-        }
-    }
 }
