@@ -8,13 +8,12 @@
  * This module parses the YAML configuration file using serde_yaml.
  * This file contains a list of URLS in the following format:
  * urls:
- *   - name: example
+ *   example:
  *     url: https://example.com
- *     permanent: false # optional
+ *     permanent: false # optional, defaults to false
  *  ...
  * It also contains the following options:
- * port: 8080 # optional
- * In the above example, all fields that are marked as optional are set to their default value.
+ * port: 8080 # optional, defaults to 8080
  */
 
 use rocket::response::Redirect;
