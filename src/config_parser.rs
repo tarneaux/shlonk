@@ -14,7 +14,6 @@
  *  ...
  * It also contains the following options:
  * port: 8080 # optional
- * error_page: /usr/share/shlonk/404.html # optional
  * In the above example, all fields that are marked as optional are set to their default value.
  */
 
@@ -30,8 +29,6 @@ pub struct Config {
     pub urls: HashMap<String, Url>,
     #[serde(default = "default_port")]
     pub port: u16,
-    #[serde(default = "default_error_page")]
-    pub error_page: String,
 }
 
 impl Config {
@@ -80,10 +77,6 @@ impl Display for ConfigReadingError {
 
 fn default_port() -> u16 {
     8080
-}
-
-fn default_error_page() -> String {
-    "/usr/share/shlonk/404.html".to_string()
 }
 
 fn default_permanent() -> bool {
