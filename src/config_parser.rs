@@ -31,14 +31,22 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn read(path: &str) -> Result<Self, ConfigReadingError> {
-        let mut file = File::open(path).map_err(|e| ConfigReadingError::IoError(e))?;
+    pub fn read(path: &str) -> Result<Self, ConfigError> {
+        let mut file = File::open(path).map_err(|e| ConfigError::IoError(e))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .map_err(|e| ConfigReadingError::IoError(e))?;
+            .map_err(|e| ConfigError::IoError(e))?;
         let config: Config =
-            serde_yaml::from_str(&contents).map_err(|e| ConfigReadingError::YamlError(e))?;
+            serde_yaml::from_str(&contents).map_err(|e| ConfigError::YamlError(e))?;
+        println!("Read config file: {:?}", config);
         Ok(config)
+    }
+    pub fn write(&self, path: &str) -> Result<(), ConfigError> {
+        let mut file = File::create(path).map_err(|e| ConfigError::IoError(e))?;
+        let contents = serde_yaml::to_string(self).map_err(|e| ConfigError::YamlError(e))?;
+        file.write_all(contents.as_bytes())
+            .map_err(|e| ConfigError::IoError(e))?;
+        Ok(())
     }
 }
 
@@ -60,16 +68,16 @@ impl Into<Redirect> for Url {
 }
 
 #[derive(Debug)]
-pub enum ConfigReadingError {
+pub enum ConfigError {
     IoError(std::io::Error),
     YamlError(serde_yaml::Error),
 }
 
-impl Display for ConfigReadingError {
+impl Display for ConfigError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ConfigReadingError::IoError(e) => write!(f, "IO error: {}", e),
-            ConfigReadingError::YamlError(e) => write!(f, "YAML error: {}", e),
+            ConfigError::IoError(e) => write!(f, "IO error: {}", e),
+            ConfigError::YamlError(e) => write!(f, "YAML error: {}", e),
         }
     }
 }
