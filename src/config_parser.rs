@@ -14,6 +14,9 @@
  *  ...
  * It also contains the following options:
  * port: 8080 # optional, defaults to 8080
+ * token: secret # optional.
+ * If token is not set, changes to URLs will not be allowed.
+ * If token is set to anything else, it will be used as the token.
  */
 
 use rocket::response::Redirect;
@@ -28,6 +31,9 @@ pub struct Config {
     pub urls: HashMap<String, Url>,
     #[serde(default = "default_port")]
     pub port: u16,
+    pub token: Option<String>,
+    #[serde(skip)]
+    pub path: String,
 }
 
 impl Config {
@@ -36,17 +42,26 @@ impl Config {
         let mut contents = String::new();
         file.read_to_string(&mut contents)
             .map_err(|e| ConfigError::IoError(e))?;
-        let config: Config =
+        let mut config: Config =
             serde_yaml::from_str(&contents).map_err(|e| ConfigError::YamlError(e))?;
         println!("Read config file: {:?}", config);
+        config.path = path.to_string();
         Ok(config)
     }
-    pub fn write(&self, path: &str) -> Result<(), ConfigError> {
-        let mut file = File::create(path).map_err(|e| ConfigError::IoError(e))?;
+    pub fn write(&self) -> Result<(), ConfigError> {
+        let mut file = File::create(self.path.clone()).map_err(|e| ConfigError::IoError(e))?;
         let contents = serde_yaml::to_string(self).map_err(|e| ConfigError::YamlError(e))?;
         file.write_all(contents.as_bytes())
             .map_err(|e| ConfigError::IoError(e))?;
         Ok(())
+    }
+    pub fn authorized(&self, token: Option<String>, authlevel: AuthLevel) -> bool {
+        match authlevel {
+            AuthLevel::Read => true,
+            AuthLevel::Add => self.token == token,
+            AuthLevel::Modify => self.token == token,
+            AuthLevel::Delete => self.token == token,
+        }
     }
 }
 
@@ -80,6 +95,13 @@ impl Display for ConfigError {
             ConfigError::YamlError(e) => write!(f, "YAML error: {}", e),
         }
     }
+}
+
+pub enum AuthLevel {
+    Read,
+    Add,
+    Modify,
+    Delete,
 }
 
 fn default_port() -> u16 {
