@@ -155,62 +155,6 @@ fn check_token(
     }
 }
 
-// #[post("/api/<name>", data = "<data>")]
-// fn add_url(
-//     name: String,
-//     data: Json<ApiRequestData>,
-//     config: &State<Arc<RwLock<Config>>>,
-// ) -> Result<Status, Status> {
-//     api_handler(name, data, config, ApiRequestType::POST)
-// }
-
-// #[put("/api/<name>", data = "<data>")]
-// fn update_url(
-//     name: String,
-//     data: Json<ApiRequestData>,
-//     config: &State<Arc<RwLock<Config>>>,
-// ) -> Result<Status, Status> {
-//     api_handler(name, data, config, ApiRequestType::PUT)
-// }
-
-// fn api_handler(
-//     name: String,
-//     data: Json<ApiRequestData>,
-//     config: &State<Arc<RwLock<Config>>>,
-//     request_type: ApiRequestType,
-// ) -> Result<Status, Status> {
-//     if config
-//         .read()
-//         .map_err(|e| {
-//             eprintln!("Error reading configuration file: {}", e);
-//             return Status::InternalServerError;
-//         })?
-//         .authorized(&data.token)
-//     {
-//         let mut config_write = config.write().map_err(|e| {
-//             eprintln!("Error writing configuration file: {}", e);
-//             return Status::InternalServerError;
-//         })?;
-//         if config_write.urls.contains_key(&name) {
-//             return Err(Status::Conflict);
-//         }
-//         config_write.urls.insert(
-//             name,
-//             Url {
-//                 url: data.url.clone(),
-//                 permanent: data.permanent.unwrap_or(false),
-//             },
-//         );
-//         config_write.write().map_err(|e| {
-//             eprintln!("Error writing configuration file: {}", e);
-//             return Status::InternalServerError;
-//         })?;
-//         Ok(Status::Created)
-//     } else {
-//         Err(Status::Unauthorized)
-//     }
-// }
-
 #[catch(404)]
 fn not_found() -> &'static str {
     "Sorry, this URL was not found."
