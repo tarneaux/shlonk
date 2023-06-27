@@ -38,21 +38,20 @@ pub struct Config {
 
 impl Config {
     pub fn read(path: &str) -> Result<Self, ConfigError> {
-        let mut file = File::open(path).map_err(|e| ConfigError::IoError(e))?;
+        let mut file = File::open(path).map_err(ConfigError::IoError)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .map_err(|e| ConfigError::IoError(e))?;
-        let mut config: Config =
-            serde_yaml::from_str(&contents).map_err(|e| ConfigError::YamlError(e))?;
+            .map_err(ConfigError::IoError)?;
+        let mut config: Self = serde_yaml::from_str(&contents).map_err(ConfigError::YamlError)?;
         println!("Read config file: {:?}", config);
         config.path = path.to_string();
         Ok(config)
     }
     pub fn write(&self) -> Result<(), ConfigError> {
-        let mut file = File::create(self.path.clone()).map_err(|e| ConfigError::IoError(e))?;
-        let contents = serde_yaml::to_string(self).map_err(|e| ConfigError::YamlError(e))?;
+        let mut file = File::create(self.path.clone()).map_err(ConfigError::IoError)?;
+        let contents = serde_yaml::to_string(self).map_err(ConfigError::YamlError)?;
         file.write_all(contents.as_bytes())
-            .map_err(|e| ConfigError::IoError(e))?;
+            .map_err(ConfigError::IoError)?;
         Ok(())
     }
     pub fn authorized(&self, token: Option<String>, authlevel: AuthLevel) -> bool {
@@ -72,12 +71,12 @@ pub struct Url {
     pub permanent: bool,
 }
 
-impl Into<Redirect> for Url {
-    fn into(self) -> Redirect {
-        if self.permanent {
-            Redirect::permanent(self.url)
+impl From<Url> for Redirect {
+    fn from(val: Url) -> Self {
+        if val.permanent {
+            Self::permanent(val.url)
         } else {
-            Redirect::temporary(self.url)
+            Self::temporary(val.url)
         }
     }
 }
@@ -91,8 +90,8 @@ pub enum ConfigError {
 impl Display for ConfigError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ConfigError::IoError(e) => write!(f, "IO error: {}", e),
-            ConfigError::YamlError(e) => write!(f, "YAML error: {}", e),
+            Self::IoError(e) => write!(f, "IO error: {}", e),
+            Self::YamlError(e) => write!(f, "YAML error: {}", e),
         }
     }
 }
@@ -104,10 +103,10 @@ pub enum AuthLevel {
     Delete,
 }
 
-fn default_port() -> u16 {
+const fn default_port() -> u16 {
     8080
 }
 
-fn default_permanent() -> bool {
+const fn default_permanent() -> bool {
     false
 }

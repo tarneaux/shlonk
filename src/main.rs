@@ -61,15 +61,17 @@ fn api_post(
     data: Json<ApiRequestData>,
     config: &State<Arc<RwLock<Config>>>,
 ) -> Result<(), Status> {
-    let mut config = write_config(data.token.clone(), config, AuthLevel::Add)?;
-    if config.urls.contains_key(&name) {
-        return Err(Status::Conflict);
+    {
+        let mut config = write_config(data.token.clone(), config, AuthLevel::Add)?;
+        if config.urls.contains_key(&name) {
+            return Err(Status::Conflict);
+        }
+        config.urls.insert(name, Url::from(data));
+        config.write().map_err(|e| {
+            eprintln!("Error writing configuration file: {}", e);
+            Status::InternalServerError
+        })?;
     }
-    config.urls.insert(name, Url::from(data));
-    config.write().map_err(|e| {
-        eprintln!("Error writing configuration file: {}", e);
-        Status::InternalServerError
-    })?;
     Ok(())
 }
 
@@ -79,15 +81,17 @@ fn api_put(
     data: Json<ApiRequestData>,
     config: &State<Arc<RwLock<Config>>>,
 ) -> Result<(), Status> {
-    let mut config = write_config(data.token.clone(), config, AuthLevel::Modify)?;
-    if !config.urls.contains_key(&name) {
-        return Err(Status::NotFound);
+    {
+        let mut config = write_config(data.token.clone(), config, AuthLevel::Modify)?;
+        if !config.urls.contains_key(&name) {
+            return Err(Status::NotFound);
+        }
+        config.urls.insert(name, Url::from(data));
+        config.write().map_err(|e| {
+            eprintln!("Error writing configuration file: {}", e);
+            Status::InternalServerError
+        })?;
     }
-    config.urls.insert(name, Url::from(data));
-    config.write().map_err(|e| {
-        eprintln!("Error writing configuration file: {}", e);
-        Status::InternalServerError
-    })?;
     Ok(())
 }
 
@@ -97,15 +101,17 @@ fn api_delete(
     data: Json<ApiRequestData>,
     config: &State<Arc<RwLock<Config>>>,
 ) -> Result<(), Status> {
-    let mut config = write_config(data.token.clone(), config, AuthLevel::Delete)?;
-    if !config.urls.contains_key(&name) {
-        return Err(Status::NotFound);
+    {
+        let mut config = write_config(data.token.clone(), config, AuthLevel::Delete)?;
+        if !config.urls.contains_key(&name) {
+            return Err(Status::NotFound);
+        }
+        config.urls.remove(&name);
+        config.write().map_err(|e| {
+            eprintln!("Error writing configuration file: {}", e);
+            Status::InternalServerError
+        })?;
     }
-    config.urls.remove(&name);
-    config.write().map_err(|e| {
-        eprintln!("Error writing configuration file: {}", e);
-        Status::InternalServerError
-    })?;
     Ok(())
 }
 
@@ -115,10 +121,10 @@ fn read_config(
     authlevel: AuthLevel,
 ) -> Result<RwLockReadGuard<Config>, Status> {
     check_token(token, config, authlevel)?;
-    Ok(config.read().map_err(|e| {
+    config.read().map_err(|e| {
         eprintln!("Error reading configuration file: {}", e);
         Status::InternalServerError
-    })?)
+    })
 }
 
 fn write_config(
@@ -127,10 +133,10 @@ fn write_config(
     authlevel: AuthLevel,
 ) -> Result<RwLockWriteGuard<Config>, Status> {
     check_token(token, config, authlevel)?;
-    Ok(config.write().map_err(|e| {
+    config.write().map_err(|e| {
         eprintln!("Error writing configuration file: {}", e);
         Status::InternalServerError
-    })?)
+    })
 }
 
 fn check_token(
@@ -138,21 +144,21 @@ fn check_token(
     config: &State<Arc<RwLock<Config>>>,
     authlevel: AuthLevel,
 ) -> Result<(), Status> {
-    match config
+    let authorized = config
         .read()
         .map_err(|e| {
             eprintln!("Error while authenticating (read on RwLock): {}", e);
             Status::InternalServerError
         })?
-        .authorized(token, authlevel)
-    {
+        .authorized(token, authlevel);
+    match authorized {
         true => Ok(()),
         false => Err(Status::Unauthorized),
     }
 }
 
 #[catch(404)]
-fn not_found() -> &'static str {
+const fn not_found() -> &'static str {
     "Sorry, this URL was not found."
 }
 
@@ -165,7 +171,7 @@ struct ApiRequestData {
 
 impl From<Json<ApiRequestData>> for Url {
     fn from(data: Json<ApiRequestData>) -> Self {
-        Url {
+        Self {
             url: data.url.clone(),
             permanent: data.permanent.unwrap_or(false),
         }
