@@ -47,13 +47,9 @@ fn get_url(name: &str, config: &State<Arc<RwLock<Config>>>) -> Result<Option<Red
         .map(|r| r.clone().into()))
 }
 
-#[get("/<name>", data = "<data>")]
-fn api_get(
-    name: String,
-    data: Json<ApiRequestData>,
-    config: &State<Arc<RwLock<Config>>>,
-) -> Result<String, Status> {
-    read_config(data.token.clone(), config, AuthLevel::Read)?
+#[get("/<name>")]
+fn api_get(name: String, config: &State<Arc<RwLock<Config>>>) -> Result<String, Status> {
+    read_config(None, config, AuthLevel::Read)?
         .urls
         .get(&name)
         .map_or_else(|| Err(Status::NotFound), |r| Ok(r.url.clone()))
