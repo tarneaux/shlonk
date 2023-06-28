@@ -14,9 +14,6 @@
  *  ...
  * It also contains the following options:
  * port: 8080 # optional, defaults to 8080
- * token: secret # optional.
- * If token is not set, changes to URLs will not be allowed.
- * If token is set to anything else, it will be used as the token.
  */
 
 use rocket::response::Redirect;
@@ -31,36 +28,17 @@ pub struct Config {
     pub urls: HashMap<String, Url>,
     #[serde(default = "default_port")]
     pub port: u16,
-    pub token: Option<String>,
-    #[serde(skip)]
-    pub path: String,
 }
 
 impl Config {
-    pub fn read(path: &str) -> Result<Self, ConfigError> {
-        let mut file = File::open(path).map_err(ConfigError::IoError)?;
+    pub fn read(path: &str) -> Result<Self, ConfigReadingError> {
+        let mut file = File::open(path).map_err(|e| ConfigReadingError::IoError(e))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .map_err(ConfigError::IoError)?;
-        let mut config: Self = serde_yaml::from_str(&contents).map_err(ConfigError::YamlError)?;
-        println!("Read config file: {:?}", config);
-        config.path = path.to_string();
+            .map_err(|e| ConfigReadingError::IoError(e))?;
+        let config: Config =
+            serde_yaml::from_str(&contents).map_err(|e| ConfigReadingError::YamlError(e))?;
         Ok(config)
-    }
-    pub fn write(&self) -> Result<(), ConfigError> {
-        let mut file = File::create(self.path.clone()).map_err(ConfigError::IoError)?;
-        let contents = serde_yaml::to_string(self).map_err(ConfigError::YamlError)?;
-        file.write_all(contents.as_bytes())
-            .map_err(ConfigError::IoError)?;
-        Ok(())
-    }
-    pub fn authorized(&self, token: Option<String>, authlevel: AuthLevel) -> bool {
-        match authlevel {
-            AuthLevel::Read => true,
-            AuthLevel::Add => self.token == token,
-            AuthLevel::Modify => self.token == token,
-            AuthLevel::Delete => self.token == token,
-        }
     }
 }
 
@@ -71,42 +49,35 @@ pub struct Url {
     pub permanent: bool,
 }
 
-impl From<Url> for Redirect {
-    fn from(val: Url) -> Self {
-        if val.permanent {
-            Self::permanent(val.url)
+impl Into<Redirect> for Url {
+    fn into(self) -> Redirect {
+        if self.permanent {
+            Redirect::permanent(self.url)
         } else {
-            Self::temporary(val.url)
+            Redirect::temporary(self.url)
         }
     }
 }
 
 #[derive(Debug)]
-pub enum ConfigError {
+pub enum ConfigReadingError {
     IoError(std::io::Error),
     YamlError(serde_yaml::Error),
 }
 
-impl Display for ConfigError {
+impl Display for ConfigReadingError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::IoError(e) => write!(f, "IO error: {}", e),
-            Self::YamlError(e) => write!(f, "YAML error: {}", e),
+            ConfigReadingError::IoError(e) => write!(f, "IO error: {}", e),
+            ConfigReadingError::YamlError(e) => write!(f, "YAML error: {}", e),
         }
     }
 }
 
-pub enum AuthLevel {
-    Read,
-    Add,
-    Modify,
-    Delete,
-}
-
-const fn default_port() -> u16 {
+fn default_port() -> u16 {
     8080
 }
 
-const fn default_permanent() -> bool {
+fn default_permanent() -> bool {
     false
 }
