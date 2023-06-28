@@ -26,6 +26,7 @@ fn rocket() -> _ {
     };
     rocket::build()
         .manage(config)
+        .mount("/", routes![index])
         .mount("/", routes![get_url])
         .register("/", catchers![not_found])
         .configure(rocket_config)
@@ -34,6 +35,15 @@ fn rocket() -> _ {
 #[get("/<name>")]
 fn get_url(name: &str, config: &State<Config>) -> Option<Redirect> {
     config.urls.get(name).map(|r| r.clone().into())
+}
+
+#[get("/")]
+fn index() -> &'static str {
+    concat!(
+        "Welcome to Shlonk, a simple, fast, URL shortener.\n",
+        "There is nothing to see here, please go to /<name> to get redirected to the URL you want.\n",
+        "If you are the owner of this Shlonk instance, edit the YAML file to add new URLs.\n",
+    )
 }
 
 #[catch(404)]
