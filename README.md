@@ -21,6 +21,12 @@ shlonk -c ./config.yml
 
 That's it. That's the documentation for Shlonk. And guess what: the code is less than 200 lines long.
 
+## Installation
+
+Cargo:
+```bash
+cargo install shlonk
+```
 
 ## Why the name?
 
