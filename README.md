@@ -15,7 +15,7 @@ port: 8080
 ```
 
 To launch Shlonk, write this config to a file, say `config.yml`, and then run:
-```
+```bash
 shlonk -c ./config.yml
 ```
 
