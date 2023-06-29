@@ -5,6 +5,7 @@ edition = "2021"
 description = "A simple URL shortener"
 license = "GPL-2.0"
 homepage = "https://github.com/tarneaux/shlonk"
+authors = ["tarneaux <tarneo@tarneo.fr>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
