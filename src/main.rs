@@ -38,7 +38,7 @@ fn get_url(name: &str, config: &State<Config>) -> Option<Redirect> {
 }
 
 #[get("/")]
-fn index() -> &'static str {
+const fn index() -> &'static str {
     concat!(
         "Welcome to Shlonk, a simple, fast, URL shortener.\n",
         "There is nothing to see here, please go to /<name> to get redirected to the URL you want.\n",
@@ -47,6 +47,6 @@ fn index() -> &'static str {
 }
 
 #[catch(404)]
-fn not_found() -> &'static str {
+const fn not_found() -> &'static str {
     "Sorry, this URL was not found."
 }

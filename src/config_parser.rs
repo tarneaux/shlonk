@@ -32,12 +32,12 @@ pub struct Config {
 
 impl Config {
     pub fn read(path: &str) -> Result<Self, ConfigReadingError> {
-        let mut file = File::open(path).map_err(|e| ConfigReadingError::IoError(e))?;
+        let mut file = File::open(path).map_err(ConfigReadingError::IoError)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .map_err(|e| ConfigReadingError::IoError(e))?;
-        let config: Config =
-            serde_yaml::from_str(&contents).map_err(|e| ConfigReadingError::YamlError(e))?;
+            .map_err(ConfigReadingError::IoError)?;
+        let config: Self =
+            serde_yaml::from_str(&contents).map_err(ConfigReadingError::YamlError)?;
         Ok(config)
     }
 }
@@ -49,12 +49,12 @@ pub struct Url {
     pub permanent: bool,
 }
 
-impl Into<Redirect> for Url {
-    fn into(self) -> Redirect {
-        if self.permanent {
-            Redirect::permanent(self.url)
+impl From<Url> for Redirect {
+    fn from(url: Url) -> Self {
+        if url.permanent {
+            Self::permanent(url.url)
         } else {
-            Redirect::temporary(self.url)
+            Self::to(url.url)
         }
     }
 }
@@ -68,16 +68,16 @@ pub enum ConfigReadingError {
 impl Display for ConfigReadingError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ConfigReadingError::IoError(e) => write!(f, "IO error: {}", e),
-            ConfigReadingError::YamlError(e) => write!(f, "YAML error: {}", e),
+            Self::IoError(e) => write!(f, "IO error: {}", e),
+            Self::YamlError(e) => write!(f, "YAML error: {}", e),
         }
     }
 }
 
-fn default_port() -> u16 {
+const fn default_port() -> u16 {
     8080
 }
 
-fn default_permanent() -> bool {
+const fn default_permanent() -> bool {
     false
 }
