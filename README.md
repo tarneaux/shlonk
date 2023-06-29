@@ -14,6 +14,11 @@ urls:
 port: 8080
 ```
 
+To launch Shlonk, write this config to a file, say `config.yml`, and then run:
+```
+shlonk -c ./config.yml
+```
+
 That's it. That's the documentation for Shlonk. And guess what: the code is less than 200 lines long.
 
 
