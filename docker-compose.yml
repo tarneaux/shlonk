@@ -1,0 +1,7 @@
+services:
+  shlonk:
+    build: .
+    ports:
+      - "80:8080"
+    volumes:
+      - ./config.yml:/etc/shlonk/config.yml
