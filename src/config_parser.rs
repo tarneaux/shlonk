@@ -22,12 +22,15 @@ use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
 use std::io::prelude::*;
+use std::net::IpAddr;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub urls: HashMap<String, Url>,
     #[serde(default = "default_port")]
     pub port: u16,
+    #[serde(default = "default_address")]
+    pub address: IpAddr,
 }
 
 impl Config {
@@ -80,4 +83,8 @@ const fn default_port() -> u16 {
 
 const fn default_permanent() -> bool {
     false
+}
+
+fn default_address() -> IpAddr {
+    IpAddr::from([0, 0, 0, 0])
 }

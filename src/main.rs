@@ -21,6 +21,7 @@ fn rocket() -> _ {
         std::process::exit(1);
     });
     let rocket_config = rocket::Config {
+        address: config.address,
         port: config.port,
         ..Default::default()
     };
