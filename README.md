@@ -11,7 +11,8 @@ urls:
   example: # /example redirects to...
     url: https://example.com/
     permanent: true
-port: 8080
+port: 8080 # Default value
+address: 0.0.0.0 # Default value
 ```
 
 To launch Shlonk, write this config to a file, say `config.yml`, and then run:
