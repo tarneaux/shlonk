@@ -31,7 +31,7 @@ cargo install shlonk
 
 ## Docker installation
 
-See the example [docker-compose](docker-compose.yml)
+See the example [docker-compose](https://github.com/tarneaux/shlonk/blob/main/docker-compose.yml).
 
 ## Why the name?
 
