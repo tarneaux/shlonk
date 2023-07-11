@@ -1,6 +1,7 @@
 services:
   shlonk:
-    build: .
+    image: ghcr.io/tarneaux/shlonk:latest
+    # build: .
     ports:
       - "80:8080"
     volumes:

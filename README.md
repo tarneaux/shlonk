@@ -29,6 +29,10 @@ Cargo:
 cargo install shlonk
 ```
 
+## Docker installation
+
+See the example [docker-compose](docker-compose.yml)
+
 ## Why the name?
 
 It is a variation on Shlink, and here is a definition from the [urban dictionary](https://www.urbandictionary.com/define.php?term=Shlonk):
