@@ -1,6 +1,6 @@
 [package]
 name = "shlonk"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 description = "A simple URL shortener"
 license = "GPL-2.0"
